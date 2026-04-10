@@ -4,67 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>席替えアプリ</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* デザインはそのまま維持 */
-        :root {
-            --primary: #4f46e5;
-            --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            --text-primary: #1e293b;
-            --text-secondary: #475569;
-            --border: #e2e8f0;
-            --background: #f8fafc;
-            --surface: #ffffff;
-            --glass: rgba(255, 255, 255, 0.9);
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
+        :root { --primary: #4f46e5; --text-primary: #1e293b; --text-secondary: #475569; --border: #e2e8f0; --background: #f8fafc; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: "Noto Sans JP", sans-serif; color: var(--text-primary); background: var(--background); line-height: 1.6; min-height: 100vh; display: flex; justify-content: center; }
+        body { font-family: "Noto Sans JP", sans-serif; color: var(--text-primary); background: var(--background); display: flex; justify-content: center; min-height: 100vh; }
         .app-container { width: 100%; max-width: 480px; padding: 16px; margin: auto 0; }
-        .card { background: var(--glass); border-radius: 24px; padding: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 20px; border: 1px solid white; }
-        h1 { font-size: 1.8rem; font-weight: 900; text-align: center; color: var(--primary); }
+        .card { background: white; border-radius: 24px; padding: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 20px; }
+        h1 { font-size: 1.8rem; font-weight: 900; text-align: center; color: var(--primary); margin-bottom: 5px; }
         h2 { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
-        .btn { min-height: 56px; border-radius: 16px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
-        .btn:active { transform: scale(0.98); opacity: 0.9; }
-        .btn-primary { background: var(--primary-gradient); color: white; }
+        .btn { min-height: 52px; border-radius: 14px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+        .btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; }
         .btn-secondary { background: white; color: var(--text-primary); border: 1px solid var(--border); }
         .chips-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
-        .chip { padding: 15px 5px; border-radius: 14px; background: white; border: 2px solid var(--border); text-align: center; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .chip { padding: 15px 5px; border-radius: 14px; background: white; border: 2px solid var(--border); text-align: center; font-weight: 700; cursor: pointer; }
         .chip.active { border-color: var(--primary); background: #eef2ff; color: var(--primary); }
-        .result-number { font-size: 4.5rem; font-weight: 900; color: var(--primary); text-align: center; margin: 10px 0; }
-        select { width: 100%; padding: 14px; border-radius: 12px; border: 2px solid var(--border); font-size: 1rem; outline: none; background: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.8rem; }
-        th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; }
-        .admin-item { display: flex; gap: 5px; align-items: center; padding: 10px; background: white; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 5px; }
+        .result-number { font-size: 5rem; font-weight: 900; color: var(--primary); text-align: center; }
+        input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 1rem; }
+        .char-item { display: flex; align-items: center; gap: 8px; background: #f1f5f9; padding: 10px; border-radius: 12px; margin-bottom: 8px; }
+        .char-item input { padding: 8px; }
     </style>
 </head>
 <body>
     <div id="app" class="app-container"></div>
-
     <script>
-        const STORAGE_KEY = 'sekigae_final_data';
-        const LOGS_KEY = 'sekigae_final_logs';
+        const STORAGE_KEY = 'sekigae_full_config';
+        const LOGS_KEY = 'sekigae_full_logs';
 
-        // 初期データの定義を確実に
-        const defaultState = {
-            className: '3年A組',
-            groupLabel: 'グループ',
-            primaryColor: '#4f46e5',
-            textColor: '#475569',
-            headingColor: '#1e293b',
-            characters: [{label:'A',min:1,max:10},{label:'B',min:11,max:20},{label:'C',min:21,max:30}],
-            maxAttendance: 40,
-            passcode: '1234'
+        let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+            className: '3年A組', groupLabel: 'グループ',
+            characters: [{label:'A',min:1,max:10},{label:'B',min:11,max:20}],
+            maxAttendance: 40, passcode: '1234'
         };
-
-        let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState;
         let logs = JSON.parse(localStorage.getItem(LOGS_KEY)) || [];
-
-        // 万が一データが壊れていた場合の補完
-        if (!state.characters || state.characters.length === 0) state = defaultState;
 
         const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         const saveL = () => localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
@@ -72,108 +45,71 @@
         const nav = (page, params) => {
             const app = document.getElementById('app');
             const pending = JSON.parse(localStorage.getItem('sekigae_pending'));
-            if (pending && page !== 'result' && page !== 'admin') {
-                page = 'result';
-                params = pending;
-            }
+            if (pending && page !== 'result' && page !== 'admin') { page = 'result'; params = pending; }
 
             app.innerHTML = '';
-            
-            if (page === 'home') {
-                app.innerHTML = `
-                    <div class="card">
-                        <h1>${state.className}<br>席替え</h1>
-                        <p style="text-align:center">グループを選択して抽選を開始してください。</p>
-                        <button class="btn btn-primary" onclick="nav('flow')">席順を引く</button>
-                        <button class="btn btn-secondary" onclick="adminAuth()">管理パネル</button>
-                    </div>`;
-            }
+            if (page === 'home') app.innerHTML = `<div class="card"><h1>${state.className}</h1><p style="text-align:center">${state.groupLabel}と席番号を引きます。</p><button class="btn btn-primary" onclick="nav('flow')">抽選を始める</button><button class="btn btn-secondary" onclick="auth()">管理パネル</button></div>`;
             
             if (page === 'flow') {
                 let sel = null;
                 const update = () => {
-                    app.innerHTML = `<div class="card">
-                        <h2>${state.groupLabel}を選択</h2>
-                        <div class="chips-container">${state.characters.map((c,i)=>`<div class="chip ${sel===i?'active':''}" onclick="setSel(${i})">${c.label}</div>`).join('')}</div>
-                        <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
-                            <button class="btn btn-primary" style="${sel===null?'display:none':''}" onclick="draw()">抽選する</button>
-                            <button class="btn btn-secondary" onclick="nav('home')">戻る</button>
-                        </div>
-                    </div>`;
+                    app.innerHTML = `<div class="card"><h2>${state.groupLabel}を選択</h2><div class="chips-container">${state.characters.map((c,i)=>`<div class="chip ${sel===i?'active':''}" onclick="setSel(${i})">${c.label}</div>`).join('')}</div><button class="btn btn-primary" style="${sel===null?'display:none':''}" onclick="doDraw()">抽選する</button><button class="btn btn-secondary" onclick="nav('home')">戻る</button></div>`;
                 };
                 window.setSel = (i) => { sel = i; update(); };
-                window.draw = () => {
-                    const c = state.characters[sel];
-                    const used = logs.map(l=>l.seat);
-                    const avail = [];
+                window.doDraw = () => {
+                    const c = state.characters[sel]; const used = logs.map(l=>l.seat); const avail = [];
                     for(let i=parseInt(c.min);i<=parseInt(c.max);i++) if(!used.includes(i)) avail.push(i);
-                    if(!avail.length) return alert('このグループの席はすべて埋まりました');
+                    if(!avail.length) return alert('空きがありません');
                     const s = avail[Math.floor(Math.random()*avail.length)];
-                    const p = {char:c.label, seat:s};
-                    localStorage.setItem('sekigae_pending', JSON.stringify(p));
-                    nav('result', p);
+                    const p = {char:c.label, seat:s}; localStorage.setItem('sekigae_pending', JSON.stringify(p)); nav('result', p);
                 };
                 update();
             }
 
             if (page === 'result') {
-                app.innerHTML = `<div class="card">
-                    <div style="font-size: 0.9rem; color: var(--text-secondary); text-align: center;">抽選結果</div>
-                    <div class="result-number">${params.seat}</div>
-                    <p style="text-align:center">${state.groupLabel}: ${params.char}</p>
-                    <div style="background: rgba(0,0,0,0.03); padding: 20px; border-radius: 20px; display:flex; flex-direction:column; gap:10px;">
-                        <label style="font-size:0.8rem; font-weight:bold; color:var(--primary)">出席番号を選択</label>
-                        <select id="att">
-                            <option value="">選択</option>
-                            ${Array.from({length:state.maxAttendance},(_,i)=>i+1).filter(n=>!logs.some(l=>parseInt(l.attendance)===n)).map(n=>`<option value="${n}">${n}番</option>`).join('')}
-                        </select>
-                        <button class="btn btn-primary" onclick="conf()">確定して保存</button>
-                    </div>
-                </div>`;
-                window.conf = () => {
-                    const a = document.getElementById('att').value;
-                    if(!a) return alert('出席番号を選択してください');
-                    logs.push({attendance:a, char:params.char, seat:params.seat, time: new Date().toLocaleTimeString()});
-                    saveL();
-                    localStorage.removeItem('sekigae_pending');
-                    alert('保存完了！');
-                    nav('home');
+                app.innerHTML = `<div class="card"><div class="result-number">${params.seat}</div><p style="text-align:center">${state.groupLabel}: ${params.char}</p><div class="form-group"><label>出席番号</label><select id="att"><option value="">選択</option>${Array.from({length:state.maxAttendance},(_,i)=>i+1).filter(n=>!logs.some(l=>parseInt(l.attendance)===n)).map(n=>`<option value="${n}">${n}番</option>`).join('')}</select><button class="btn btn-primary" style="margin-top:10px" onclick="confirmS()">確定して保存</button></div></div>`;
+                window.confirmS = () => {
+                    const a = document.getElementById('att').value; if(!a) return alert('選択してください');
+                    logs.push({attendance:a, char:params.char, seat:params.seat}); saveL();
+                    localStorage.removeItem('sekigae_pending'); nav('home');
                 };
             }
 
             if (page === 'admin') {
-                app.innerHTML = `<div class="card" style="padding:15px">
-                    <h2>管理</h2>
-                    <input id="c-name" placeholder="クラス名" value="${state.className}">
-                    <input id="g-label" placeholder="グループの呼び方" value="${state.groupLabel}">
-                    <input type="number" id="m-att" value="${state.maxAttendance}">
-                    <input id="pass" value="${state.passcode}">
-                    <button class="btn btn-primary" onclick="saveAdmin()">設定保存</button>
+                const renderChr = () => state.characters.map((c,i)=>`
+                    <div class="char-item">
+                        <input style="flex:1" value="${c.label}" onchange="updC(${i},'label',this.value)">
+                        <input type="number" style="width:60px" value="${c.min}" onchange="updC(${i},'min',this.value)">
+                        <span>~</span>
+                        <input type="number" style="width:60px" value="${c.max}" onchange="updC(${i},'max',this.value)">
+                        <button onclick="delC(${i})" style="border:none;background:none;color:red;padding:5px">消去</button>
+                    </div>`).join('');
+
+                app.innerHTML = `<div class="card"><h2>管理</h2>
+                    <input id="cn" value="${state.className}" placeholder="クラス名">
+                    <input id="gl" value="${state.groupLabel}" placeholder="呼称">
+                    <input type="number" id="ma" value="${state.maxAttendance}" placeholder="上限">
+                    <div id="chr-list">${renderChr()}</div>
+                    <button class="btn btn-secondary" onclick="addC()">＋文字を追加</button>
+                    <button class="btn btn-primary" onclick="svA()">全て保存</button>
                     <button class="btn btn-secondary" onclick="nav('home')">戻る</button>
-                    <hr>
-                    <div style="max-height:200px; overflow-y:auto">
-                        <table><thead><tr><th>番号</th><th>G</th><th>席</th></tr></thead>
-                        <tbody>${logs.map(l=>`<tr><td>${l.attendance}</td><td>${l.char}</td><td>${l.seat}</td></tr>`).join('')}</tbody></table>
-                    </div>
-                    <button class="btn btn-secondary" style="color:red; margin-top:10px" onclick="clearL()">履歴リセット</button>
+                    <button class="btn btn-secondary" style="color:red" onclick="logs=[];saveL();nav('admin')">履歴削除</button>
                 </div>`;
-                window.saveAdmin = () => {
-                    state.className = document.getElementById('c-name').value;
-                    state.groupLabel = document.getElementById('g-label').value;
-                    state.maxAttendance = document.getElementById('m-att').value;
-                    state.passcode = document.getElementById('pass').value;
+                window.updC = (i,k,v) => { state.characters[i][k] = v; };
+                window.addC = () => { state.characters.push({label:'?',min:0,max:0}); nav('admin'); };
+                window.delC = (i) => { state.characters.splice(i,1); nav('admin'); };
+                window.svA = () => {
+                    state.className=document.getElementById('cn').value;
+                    state.groupLabel=document.getElementById('gl').value;
+                    state.maxAttendance=document.getElementById('ma').value;
                     save(); nav('home');
                 };
-                window.clearL = () => { if(confirm('全て消去しますか？')){ logs=[]; saveL(); nav('admin'); } };
             }
             if(window.lucide) lucide.createIcons();
-            window.scrollTo(0,0);
         };
 
-        const adminAuth = () => { if(prompt('パスコード') === state.passcode) nav('admin'); };
-        window.nav = nav;
-        window.setSel = (i) => { /* Placeholder for scope */ }; 
-        
+        const auth = () => { if(prompt('パスコード')===state.passcode) nav('admin'); };
+        window.nav = nav; window.auth = auth;
         document.addEventListener('DOMContentLoaded', () => nav('home'));
     </script>
 </body>
