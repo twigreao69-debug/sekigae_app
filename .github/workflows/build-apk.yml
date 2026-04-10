@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK (Auto Repair)
 
 on:
   push:
@@ -23,17 +23,15 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Install Dependencies
+      - name: Force Fix Dependencies
         run: |
-          npm install
+          npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "席替え" com.sekigae.app --web-dir .
 
-      - name: Initialize Capacitor Android
+      - name: Add Android Platform
         run: |
           npx cap add android
-
-      - name: Copy Web Assets
-        run: |
           npx cap copy android
 
       - name: Build APK with Gradle
