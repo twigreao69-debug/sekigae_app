@@ -47,4 +47,3 @@ jobs:
         with:
           name: sekigae-app-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
-
