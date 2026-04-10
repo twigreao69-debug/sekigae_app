@@ -12,7 +12,7 @@
         body { font-family: "Noto Sans JP", sans-serif; color: var(--text-primary); background: var(--background); display: flex; justify-content: center; min-height: 100vh; }
         .app-container { width: 100%; max-width: 480px; padding: 16px; margin: auto 0; }
         .card { background: white; border-radius: 24px; padding: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 20px; }
-        h1 { font-size: 1.8rem; font-weight: 900; text-align: center; color: var(--primary); margin-bottom: 5px; }
+        h1 { font-size: 1.8rem; font-weight: 900; text-align: center; color: var(--primary); }
         h2 { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
         .btn { min-height: 52px; border-radius: 14px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
         .btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; }
@@ -22,15 +22,18 @@
         .chip.active { border-color: var(--primary); background: #eef2ff; color: var(--primary); }
         .result-number { font-size: 5rem; font-weight: 900; color: var(--primary); text-align: center; }
         input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 1rem; }
-        .char-item { display: flex; align-items: center; gap: 8px; background: #f1f5f9; padding: 10px; border-radius: 12px; margin-bottom: 8px; }
-        .char-item input { padding: 8px; }
+        .char-item { display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 0.85rem; }
+        th { background: #f1f5f9; font-weight: 700; }
     </style>
 </head>
 <body>
     <div id="app" class="app-container"></div>
     <script>
-        const STORAGE_KEY = 'sekigae_full_config';
-        const LOGS_KEY = 'sekigae_full_logs';
+        // キーを固定してリセットを防ぐ
+        const STORAGE_KEY = 'sekigae_actual_final_state';
+        const LOGS_KEY = 'sekigae_actual_final_logs';
 
         let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
             className: '3年A組', groupLabel: 'グループ',
@@ -48,7 +51,7 @@
             if (pending && page !== 'result' && page !== 'admin') { page = 'result'; params = pending; }
 
             app.innerHTML = '';
-            if (page === 'home') app.innerHTML = `<div class="card"><h1>${state.className}</h1><p style="text-align:center">${state.groupLabel}と席番号を引きます。</p><button class="btn btn-primary" onclick="nav('flow')">抽選を始める</button><button class="btn btn-secondary" onclick="auth()">管理パネル</button></div>`;
+            if (page === 'home') app.innerHTML = `<div class="card"><h1>${state.className}<br>席替え</h1><button class="btn btn-primary" onclick="nav('flow')">抽選を始める</button><button class="btn btn-secondary" onclick="auth()">管理パネル</button></div>`;
             
             if (page === 'flow') {
                 let sel = null;
@@ -67,9 +70,9 @@
             }
 
             if (page === 'result') {
-                app.innerHTML = `<div class="card"><div class="result-number">${params.seat}</div><p style="text-align:center">${state.groupLabel}: ${params.char}</p><div class="form-group"><label>出席番号</label><select id="att"><option value="">選択</option>${Array.from({length:state.maxAttendance},(_,i)=>i+1).filter(n=>!logs.some(l=>parseInt(l.attendance)===n)).map(n=>`<option value="${n}">${n}番</option>`).join('')}</select><button class="btn btn-primary" style="margin-top:10px" onclick="confirmS()">確定して保存</button></div></div>`;
+                app.innerHTML = `<div class="card"><div class="result-number">${params.seat}</div><p style="text-align:center; font-weight:bold;">${state.groupLabel}: ${params.char}</p><div style="display:flex;flex-direction:column;gap:10px;"><label>出席番号を選択</label><select id="att"><option value="">選択</option>${Array.from({length:state.maxAttendance},(_,i)=>i+1).filter(n=>!logs.some(l=>parseInt(l.attendance)===n)).map(n=>`<option value="${n}">${n}番</option>`).join('')}</select><button class="btn btn-primary" onclick="confirmS()">確定して保存</button></div></div>`;
                 window.confirmS = () => {
-                    const a = document.getElementById('att').value; if(!a) return alert('選択してください');
+                    const a = document.getElementById('att').value; if(!a) return alert('出席番号を選択してください');
                     logs.push({attendance:a, char:params.char, seat:params.seat}); saveL();
                     localStorage.removeItem('sekigae_pending'); nav('home');
                 };
@@ -78,25 +81,31 @@
             if (page === 'admin') {
                 const renderChr = () => state.characters.map((c,i)=>`
                     <div class="char-item">
-                        <input style="flex:1" value="${c.label}" onchange="updC(${i},'label',this.value)">
-                        <input type="number" style="width:60px" value="${c.min}" onchange="updC(${i},'min',this.value)">
+                        <input style="width:50px" value="${c.label}" onfocus="this.select()" onchange="updC(${i},'label',this.value)">
+                        <input type="number" style="flex:1" value="${c.min}" onchange="updC(${i},'min',this.value)">
                         <span>~</span>
-                        <input type="number" style="width:60px" value="${c.max}" onchange="updC(${i},'max',this.value)">
-                        <button onclick="delC(${i})" style="border:none;background:none;color:red;padding:5px">消去</button>
+                        <input type="number" style="flex:1" value="${c.max}" onchange="updC(${i},'max',this.value)">
+                        <button onclick="delC(${i})" style="color:red;border:none;background:none;font-weight:bold;padding:5px;">×</button>
                     </div>`).join('');
 
-                app.innerHTML = `<div class="card"><h2>管理</h2>
-                    <input id="cn" value="${state.className}" placeholder="クラス名">
-                    <input id="gl" value="${state.groupLabel}" placeholder="呼称">
-                    <input type="number" id="ma" value="${state.maxAttendance}" placeholder="上限">
+                const renderLogs = () => logs.length === 0 ? '<tr><td colspan="3" style="text-align:center;padding:20px;">履歴がありません</td></tr>' : logs.map(l=>`<tr><td>${l.attendance}番</td><td>${l.char}</td><td>${l.seat}</td></tr>`).join('');
+
+                app.innerHTML = `<div class="card"><h2>管理設定</h2>
+                    <label style="font-size:0.8rem;color:var(--text-secondary)">クラス名</label><input id="cn" value="${state.className}">
+                    <label style="font-size:0.8rem;color:var(--text-secondary)">呼び方</label><input id="gl" value="${state.groupLabel}">
+                    <label style="font-size:0.8rem;color:var(--text-secondary)">出席番号上限</label><input type="number" id="ma" value="${state.maxAttendance}">
                     <div id="chr-list">${renderChr()}</div>
-                    <button class="btn btn-secondary" onclick="addC()">＋文字を追加</button>
-                    <button class="btn btn-primary" onclick="svA()">全て保存</button>
+                    <button class="btn btn-secondary" onclick="addC()">＋グループ追加</button>
+                    <button class="btn btn-primary" onclick="svA()">設定を保存</button>
+                    <hr>
+                    <div style="max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:12px;">
+                        <table><thead><tr><th>番号</th><th>G</th><th>席</th></tr></thead><tbody>${renderLogs()}</tbody></table>
+                    </div>
                     <button class="btn btn-secondary" onclick="nav('home')">戻る</button>
-                    <button class="btn btn-secondary" style="color:red" onclick="logs=[];saveL();nav('admin')">履歴削除</button>
+                    <button class="btn btn-secondary" style="color:red;border-color:#fecaca;" onclick="if(confirm('履歴を全て削除しますか？')){logs=[];saveL();nav('admin');}">履歴リセット</button>
                 </div>`;
                 window.updC = (i,k,v) => { state.characters[i][k] = v; };
-                window.addC = () => { state.characters.push({label:'?',min:0,max:0}); nav('admin'); };
+                window.addC = () => { state.characters.push({label:'新',min:0,max:0}); nav('admin'); };
                 window.delC = (i) => { state.characters.splice(i,1); nav('admin'); };
                 window.svA = () => {
                     state.className=document.getElementById('cn').value;
@@ -105,7 +114,6 @@
                     save(); nav('home');
                 };
             }
-            if(window.lucide) lucide.createIcons();
         };
 
         const auth = () => { if(prompt('パスコード')===state.passcode) nav('admin'); };
@@ -114,3 +122,4 @@
     </script>
 </body>
 </html>
+
