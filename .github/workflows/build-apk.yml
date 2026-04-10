@@ -1,4 +1,4 @@
-name: Build Android APK (Latest Version)
+name: Build Android APK (Full Power)
 
 on:
   push:
@@ -10,38 +10,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source
-        uses: actions/checkout@v4 # v3からv4に更新
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4 # v3からv4に更新
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20 # 最新のNode.jsを使用
 
       - name: Set up Java
-        uses: actions/setup-java@v4 # v3からv4に更新
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Force Fix Dependencies
+      - name: Clean and Install
         run: |
+          # 古い設定ファイルがあれば一度削除して競合を防ぐ
+          rm -f package.json capacitor.config.json
+          
+          # プロジェクトの初期化
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "席替え" com.sekigae.app --web-dir .
-
-      - name: Add Android Platform
-        run: |
+          
+          # Android用のフォルダ構成を作成
+          npx cap init "SekigaeApp" com.sekigae.app --web-dir .
           npx cap add android
-          npx cap copy android
 
-      - name: Build APK with Gradle
+      - name: Build APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4 # v3からv4に更新
+        uses: actions/upload-artifact@v4
         with:
           name: sekigae-app-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
